@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVA Theater - Premium Ads Portal</title>
+    <title>AVA Theater - Advanced Ads Portal</title>
     <style>
         :root {
             --bg-color: #060810;
             --anime-gradient: linear-gradient(135deg, #ff6b00, #ff0055, #7000ff);
+            --neon-blue: #00f0ff;
         }
 
         * {
@@ -27,12 +28,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 15px;
+            padding: 50px 15px;
             position: relative;
             overflow-x: hidden;
         }
 
-        /* پس‌زمینه کهکشانی متحرک نئونی اختصاصی */
+        /* پس‌زمینه کهکشانی متحرک نئونی */
         body::before {
             content: "";
             position: fixed;
@@ -48,28 +49,98 @@
             100% { transform: translateY(-50%); }
         }
 
-        /* کانتینر اصلی برای چیدمان عمودی تبلیغات */
-        .ads-list-container {
-            width: 100%;
-            max-width: 500px;
+        /* --- پنجره لوکس لودینگ میانی صفحه --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 6, 14, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loading-card {
+            background: rgba(20, 26, 45, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 24px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7), 0 0 30px rgba(0, 240, 255, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 50px; /* ایجاد فاصله مناسب و شیک بین هر جایگاه تبلیغاتی */
-            z-index: 10;
+            gap: 20px;
         }
 
-        /* هولدرهای اختصاصی برای مدیریت بارگذاری تبلیغات */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--neon-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            background: var(--anime-gradient);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: moveGrad 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes moveGrad {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- کانتینر چیدمان تبلیغات --- */
+        .ads-list-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 75px; /* افزایش فاصله به دلیل بزرگ‌تر شدن ابعاد تبلیغات */
+            z-index: 10;
+            padding-top: 20px;
+        }
+
+        /* استایل هولدر برای زوم و بزرگ‌نمایی تبلغیات */
         .native-ad-wrapper {
             width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 80px; /* فضای رزرو شده برای جلوگیری از پرش صفحه هنگام رفرش */
+            min-height: 100px;
+            transform: scale(1.15); /* بزرگ‌نمایی ملموس تبلیغات تا ۱۵ درصد */
+            transform-origin: center center;
+            transition: transform 0.3s ease;
         }
     </style>
 </head>
 <body>
+
+    <div class="loading-overlay" id="pageLoadingOverlay">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <div class="loading-text">LOADING PORTAL...</div>
+        </div>
+    </div>
 
     <div class="ads-list-container">
 
@@ -96,7 +167,7 @@
     </div>
 
     <script>
-        // دیتابیس کانفیگ اسکریپت‌ها و آیدی کانتینرها برای رفرش خودکار
+        // کانفیگ دیتابیس کدهای جاوااسکریپت تبلیغاتی
         const adsConfig = [
             { slotId: 'ad-slot-1', containerId: 'container-46fa53bab184d6979bf4dbeee413d25f', src: 'https://pl29741961.effectivecpmnetwork.com/46fa53bab184d6979bf4dbeee413d25f/invoke.js' },
             { slotId: 'ad-slot-2', containerId: 'container-0d866ffd8b3f981a046a0ed94c6cefd6', src: 'https://speedingdeadlyplays.com/0d866ffd8b3f981a046a0ed94c6cefd6/invoke.js' },
@@ -104,28 +175,46 @@
             { slotId: 'ad-slot-4', containerId: 'container-5b664706bd72b8402ee0b2e55cf5b2a2', src: 'https://speedingdeadlyplays.com/5b664706bd72b8402ee0b2e55cf5b2a2/invoke.js' }
         ];
 
-        // تابع اصلی بازسازی و بارگذاری مجدد زنده اسکریپت تبلیغات
-        function refreshAllNativeAds() {
-            adsConfig.forEach(ad => {
-                const wrapper = document.getElementById(ad.slotId);
-                if (wrapper) {
-                    wrapper.innerHTML = ''; // پاکسازی بنر قدیمی جهت فراخوانی مجدد ایمپرشن جدید
-                    
-                    const scriptNode = document.createElement('script');
-                    scriptNode.async = true;
-                    scriptNode.setAttribute('data-cfasync', 'false');
-                    scriptNode.src = ad.src;
-                    
-                    const divNode = document.createElement('div');
-                    divNode.id = ad.containerId;
-                    
-                    wrapper.appendChild(scriptNode);
-                    wrapper.appendChild(divNode);
-                }
-            });
+        // تابع رفرش زنده بنرها بدون نیاز به لود مجدد کل صفحه
+        function refreshSpecificAdSlot(ad) {
+            const wrapper = document.getElementById(ad.slotId);
+            if (wrapper) {
+                wrapper.innerHTML = ''; 
+                
+                const scriptNode = document.createElement('script');
+                scriptNode.async = true;
+                scriptNode.setAttribute('data-cfasync', 'false');
+                scriptNode.src = ad.src;
+                
+                const divNode = document.createElement('div');
+                divNode.id = ad.containerId;
+                
+                wrapper.appendChild(scriptNode);
+                wrapper.appendChild(divNode);
+            }
         }
 
-        // فعال‌سازی تایمر خودکار روی ۶۰۰۰۰ میلی‌ثانیه (دقیقاً هر ۱ دقیقه یک‌بار رفرش زنده)
+        function refreshAllNativeAds() {
+            adsConfig.forEach(ad => refreshSpecificAdSlot(ad));
+        }
+
+        // مدیریت لودینگ ۲ ثانیه‌ای و تضمین فراخوانی همزمان اسکریپت‌ها
+        window.addEventListener('DOMContentLoaded', () => {
+            // شروع عملیات رندر همزمان با باز شدن لودینگ
+            refreshAllNativeAds();
+
+            setTimeout(() => {
+                const overlay = document.getElementById('pageLoadingOverlay');
+                if (overlay) {
+                    overlay.style.opacity = '0';
+                    overlay.style.visibility = 'hidden';
+                }
+                // یک فراخوانی مجدد جهت اطمینان از بالا آمدن قطعی هر ۴ بنر پس از اتمام انیمیشن لودینگ
+                setTimeout(refreshAllNativeAds, 100);
+            }, 2000); // دقیقاً ۲ ثانیه ماندگاری لودینگ در وسط صفحه
+        });
+
+        // رفرش چرخه هوشمند ایمپرشن تبلیغات؛ دقیقاً هر ۶۰ ثانیه (۱ دقیقه) یک‌بار به طور خودکار
         setInterval(refreshAllNativeAds, 60000);
     </script>
 </body>
